@@ -1,21 +1,36 @@
 import { useState } from 'react';
 import { GifList } from './gifs/components/GifList';
-import { mockGifs } from './mock-data/gifs.mock';
 import { CustomHeader } from './shared/components/CustomHeader';
 import { SearchBar } from './shared/components/SearchBar';
 import { PreviousSearches } from './gifs/components/PreviousSearches';
+import { getGifsByQuery } from './gifs/actions/get-gifs-by-query.action';
+import type { Gif } from './gifs/interfaces/gif.interface';
+
+const cachedGif: Record<string, Gif[]> = {};
 
 export const GifApp = () => {
   const [previousSearches, setPreviousSearches] = useState([]);
+  const [gifs, setGifs] = useState<Gif[]>([]);
 
-  const handleListElementClick = (item: string) => {
-    console.log(item)
+  const handleListElementClick = async (item: string) => {
+    handleSearch(item);
   } 
 
-  const handleSearch = (query: string) => {
+  const handleSearch = async (query: string) => {
     query = query.trim().toLocaleLowerCase();
     if(query.length === 0) return;
-    if(!previousSearches.includes(query)) setPreviousSearches([query, ...previousSearches].slice(0,6));
+    let data: Gif[];
+
+    if(!previousSearches.includes(query)){
+      setPreviousSearches([query, ...previousSearches].slice(0,6));
+      data = await getGifsByQuery(query);
+      cachedGif[query] = data;
+    }else {
+      
+      data = cachedGif[query];
+    }
+
+    setGifs(data);
   }
 
   return (
@@ -33,7 +48,7 @@ export const GifApp = () => {
         <PreviousSearches searches={previousSearches} query={handleListElementClick}/>
 
         {/* Gifs */}
-        <GifList gifs={mockGifs}/>
+        <GifList gifs={gifs}/>
      </>
   )
 }
